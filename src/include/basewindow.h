@@ -4,6 +4,8 @@
 #include <QMainWindow>
 #include <QtWidgets>
 
+#include "stringitem.h"
+
 namespace Ui {
 class BaseWindow;
 }
@@ -24,6 +26,7 @@ private slots:
 private:
     Ui::BaseWindow *ui;
     QGridLayout *stringLayout;
+    QQueue<StringItem *> stringItems;
 };
 
 #endif // BASEWINDOW_H
