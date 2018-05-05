@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QtWidgets>
 
-class StringItem : public QWidget
+class StringItem : public QGroupBox
 {
     Q_OBJECT
 public:
@@ -12,7 +12,6 @@ public:
     ~StringItem();
 
 private:
-    QGroupBox *baseBox;
     QGridLayout *stringItemLayout;
     QPushButton *button1;
     QPushButton *button2;
