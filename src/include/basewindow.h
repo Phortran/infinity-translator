@@ -23,10 +23,12 @@ private slots:
 
     void on_actionQuit_triggered();
 
+    void on_actionAuthor_triggered();
+
 private:
     Ui::BaseWindow *ui;
-    QGridLayout *stringLayout;
-    QQueue<StringItem *> stringItems;
+    //QGridLayout *stringLayout;
+    //QQueue<StringItem *> stringItems;
 };
 
 #endif // BASEWINDOW_H
