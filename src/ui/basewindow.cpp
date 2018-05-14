@@ -7,6 +7,7 @@ BaseWindow::BaseWindow(QWidget *parent) :
     ui(new Ui::BaseWindow)
 {
     ui->setupUi(this);
+    ui->statusBar->showMessage("Welcome to Infinity translator!");
     //stringLayout = new QGridLayout;
     //ui->stringsGroupBox->setLayout(stringLayout);
 }
@@ -22,6 +23,7 @@ void BaseWindow::on_actionOpen_triggered()
 
     QMessageBox::information(this, tr("Test dialog"),
                              tr("Open file."));
+    ui->statusBar->showMessage("File opened", 5000);
     //this->stringItems.enqueue(new StringItem);
     //this->stringLayout->addWidget(this->stringItems.last(), count, 0);
     //count++;

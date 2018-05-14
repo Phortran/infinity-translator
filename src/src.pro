@@ -19,7 +19,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 # Folders (using folder structure conventions)
 INCLUDEDIR = $$PWD/include
-LOGICDIR = $$PWD/logic
+#LOGICDIR = $$PWD/logic
 UIDIR = $$PWD/ui
 UIFORMSDIR = $$UIDIR/forms
 BUILDDIR = $$PWD/../build
@@ -30,7 +30,7 @@ SOURCES += \
 #	$$files($$LOGICDIR/*.cpp)
 
 HEADERS += \
-        $$files($$INCLUDEDIR/*.h)
+        $$files($$INCLUDEDIR/*.hpp)
 
 FORMS += \
         $$files($$UIFORMSDIR/*.ui)
