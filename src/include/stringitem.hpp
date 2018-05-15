@@ -1,24 +1,29 @@
 #ifndef STRINGITEM_H
 #define STRINGITEM_H
 
-#include <QWidget>
-#include <QtWidgets>
+//#include <QWidget>
+//#include <QtWidgets>
+#include<QString>
 
-class StringItem : public QGroupBox
-{
-    Q_OBJECT
+class StringItem {
 public:
-    explicit StringItem(QWidget *parent = nullptr);
+    StringItem(unsigned int index, QString text);
     ~StringItem();
 
+    unsigned int getIndex() const;
+    void setIndex(const unsigned int &value);
+
+    QString getText() const;
+    void setText(const QString &value);
+
 private:
-    QGridLayout *stringItemLayout;
-    QPushButton *button1;
-    QPushButton *button2;
+    //    QGridLayout *stringItemLayout;
+    //    QPushButton *button1;
+//    QPushButton *button2;
+    unsigned int index;
+    QString text;
 
-signals:
-
-public slots:
+    StringItem();
 };
 
 #endif // STRINGITEM_H

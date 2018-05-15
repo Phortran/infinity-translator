@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QtWidgets>
 
-#include "stringitem.h"
+#include "tra.hpp"
 
 namespace Ui {
 class BaseWindow;
@@ -29,6 +29,7 @@ private:
     Ui::BaseWindow *ui;
     //QGridLayout *stringLayout;
     //QQueue<StringItem *> stringItems;
+    TRAHandler *tra;
 };
 
 #endif // BASEWINDOW_H

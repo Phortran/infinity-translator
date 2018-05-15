@@ -1,6 +1,6 @@
-#include "basewindow.h"
+#include "basewindow.hpp"
 #include "ui_basewindow.h"
-#include "stringitem.h"
+#include "stringitem.hpp"
 
 BaseWindow::BaseWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -10,6 +10,7 @@ BaseWindow::BaseWindow(QWidget *parent) :
     ui->statusBar->showMessage("Welcome to Infinity translator!");
     //stringLayout = new QGridLayout;
     //ui->stringsGroupBox->setLayout(stringLayout);
+    this->tra = NULL;
 }
 
 BaseWindow::~BaseWindow()
@@ -17,16 +18,29 @@ BaseWindow::~BaseWindow()
     delete ui;
 }
 
-void BaseWindow::on_actionOpen_triggered()
-{
-    //static int count = 0;
+void BaseWindow::on_actionOpen_triggered() {
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("Open Infinity language file"),
+                                                    "./",
+                                                    tr("Text files (*.tra *.txt)"));
 
-    QMessageBox::information(this, tr("Test dialog"),
-                             tr("Open file."));
-    ui->statusBar->showMessage("File opened", 5000);
-    //this->stringItems.enqueue(new StringItem);
-    //this->stringLayout->addWidget(this->stringItems.last(), count, 0);
-    //count++;
+    if (fileName != NULL) {
+        ui->statusBar->showMessage("Loading file...");
+        if (this->tra != NULL)
+            delete this->tra;
+        this->tra = new TRAHandler(fileName);
+
+        try {
+            this->tra->init();
+        }
+        catch (const std::exception &e) {
+            ui->statusBar->showMessage(e.what());
+            return;
+        }
+
+        //TODO populate list view
+        ui->statusBar->showMessage("File correctly loaded!", 5000);
+    }
 }
 
 void BaseWindow::on_actionQuit_triggered()
