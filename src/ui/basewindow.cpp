@@ -39,6 +39,7 @@ void BaseWindow::on_actionOpen_triggered() {
         }
 
         //TODO populate list view
+        new QListWidgetItem(tr("Stocazzo"), ui->listWidget);
         ui->statusBar->showMessage("File correctly loaded!", 5000);
     }
 }
@@ -59,4 +60,14 @@ void BaseWindow::on_actionAuthor_triggered()
 {
     QMessageBox::information(this, tr("About the author"),
                              tr("About the author."));
+}
+
+//void BaseWindow::on_listWidget_itemClicked(QListWidgetItem *item)
+//{
+
+//}
+
+void BaseWindow::on_listWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
+{
+    ui->statusBar->showMessage("Item clicked!", 5000);
 }

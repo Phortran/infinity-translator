@@ -25,6 +25,10 @@ private slots:
 
     void on_actionAuthor_triggered();
 
+    //void on_listWidget_itemClicked(QListWidgetItem *item);
+
+    void on_listWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
+
 private:
     Ui::BaseWindow *ui;
     //QGridLayout *stringLayout;
