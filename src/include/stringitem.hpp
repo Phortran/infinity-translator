@@ -16,6 +16,8 @@ public:
     QString getText() const;
     void setText(const QString &value);
 
+    QString getTextIndex() const;
+
 private:
     //    QGridLayout *stringItemLayout;
     //    QPushButton *button1;

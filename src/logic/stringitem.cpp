@@ -40,3 +40,8 @@ void StringItem::setText(const QString &value)
 {
     text = value;
 }
+
+QString StringItem::getTextIndex() const
+{
+    return QString::number(this->index);
+}

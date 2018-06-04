@@ -1,5 +1,31 @@
 #include "trahandler.hpp"
 
+StringList TRAHandler::getOrigStrings() const
+{
+    return origStrings;
+}
+
+StringItem TRAHandler::getStringItemAt(int index, bool which)
+{
+    if (which)
+        return this->origStrings.at(index);
+    else
+        return this->tranStrings.at(index);
+}
+
+StringList TRAHandler::getTranStrings() const
+{
+    return tranStrings;
+}
+
+void TRAHandler::setStringAt(int index, QString data)
+{
+    StringItem _new = this->tranStrings.at(index);
+    _new.setText(data);
+
+    this->tranStrings.replace(index, _new);
+}
+
 TRAHandler::TRAHandler(){}
 
 TRAHandler::TRAHandler(QString filepath) {
@@ -21,7 +47,7 @@ void TRAHandler::init() {
     QTextStream in(&textFile);
     line = in.readLine();
     while (!line.isNull()) {
-        wholeText.append(line);
+        wholeText.append(line+"\n");
         line = in.readLine();
     }
 
@@ -43,6 +69,7 @@ void TRAHandler::init() {
 
         string.remove('~');
 
-        this->strings.append(*(new StringItem(stringIndex, string)));
+        this->origStrings.append(*(new StringItem(stringIndex, string)));
+        this->tranStrings.append(*(new StringItem(stringIndex, *(new QString()))));
     }
 }
