@@ -212,7 +212,14 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="actionOpen"/>
+    <widget class="QMenu" name="menu_Open">
+     <property name="title">
+      <string>&amp;Open</string>
+     </property>
+     <addaction name="action_open_source_file"/>
+     <addaction name="action_open_destination_file"/>
+    </widget>
+    <addaction name="menu_Open"/>
     <addaction name="separator"/>
     <addaction name="action_Save"/>
     <addaction name="actionSaveAs"/>
@@ -230,17 +237,6 @@
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionOpen">
-   <property name="text">
-    <string>&amp;Open</string>
-   </property>
-   <property name="toolTip">
-    <string>Open .tra file</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
-  </action>
   <action name="actionQuit">
    <property name="text">
     <string>&amp;Quit</string>
@@ -279,6 +275,25 @@
    </property>
    <property name="toolTip">
     <string>About Qt</string>
+   </property>
+  </action>
+  <action name="action_open_source_file">
+   <property name="text">
+    <string>&amp;Source file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O, Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_open_destination_file">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Destination file</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O, Ctrl+D</string>
    </property>
   </action>
  </widget>

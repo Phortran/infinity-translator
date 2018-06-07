@@ -11,11 +11,13 @@
 class TRAHandler
 {
 private:
-    QString filePath;
+    QString sourceFilePath;
+    QString destFilePath;
     StringList origStrings;
     StringList tranStrings;
 
     TRAHandler();
+    StringList * extractStringItemsFromFile(QString textFileName);
 
 public:
     static const bool ORIG = true;
@@ -26,7 +28,10 @@ public:
     StringList getOrigStrings() const;
     StringItem getStringItemAt(int index, bool which);
     StringList getTranStrings() const;
+    void setTranStrings();
     void setStringAt(int index, QString data);
+    void setDestFilePath(const QString &value);
+    QString getDestFilePath() const;
 };
 
 #endif // TRA_HPP

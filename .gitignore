@@ -48,3 +48,6 @@ Makefile
 
 # Log files
 *.log
+
+# Test files
+*.tra

@@ -26,17 +26,33 @@ void TRAHandler::setStringAt(int index, QString data)
     this->tranStrings.replace(index, _new);
 }
 
-TRAHandler::TRAHandler(){}
+void TRAHandler::setTranStrings() {
+    if (this->destFilePath == NULL || this->destFilePath == "")
+        throw std::invalid_argument("Invalid destination filename");
 
-TRAHandler::TRAHandler(QString filepath) {
-    this->filePath = filepath;
+    StringList *list = extractStringItemsFromFile(this->destFilePath);
+
+    if (this->tranStrings.size() != list->size())
+        throw std::length_error("Incoherent destination file");
+
+    int i = 0;
+    foreach (StringItem si, *list) {
+        if (this->tranStrings.at(i).getIndex() != si.getIndex())
+            throw std::length_error("Incoherent destination file");
+        else {
+            this->tranStrings.replace(i, si);
+            i++;
+        }
+    }
 }
 
-void TRAHandler::init() {
+StringList * TRAHandler::extractStringItemsFromFile(QString textFileName) {
+    StringList *ans = new StringList();
+
     QString wholeText, line;
-    QFile textFile(this->filePath);
     QStringList stringList, stringItemslist;
     unsigned int stringIndex;
+    QFile textFile(textFileName);
     QString string;
     QStringList::iterator iter;
     bool stat;
@@ -47,7 +63,9 @@ void TRAHandler::init() {
     QTextStream in(&textFile);
     line = in.readLine();
     while (!line.isNull()) {
-        wholeText.append(line+"\n");
+        wholeText.append(line);
+        if (!line.endsWith("~"))
+            wholeText.append("\n");
         line = in.readLine();
     }
 
@@ -67,9 +85,39 @@ void TRAHandler::init() {
 
         string = stringItemslist.at(1);
 
-        string.remove('~');
+        //string.remove(QRegExp("[^a-zA-Z\\d\\s]"));
+        //string.remove(QRegExp("[~\\n$]"));
+        string.remove(QRegExp("~\\n?"));
 
-        this->origStrings.append(*(new StringItem(stringIndex, string)));
-        this->tranStrings.append(*(new StringItem(stringIndex, *(new QString()))));
+        ans->append(*(new StringItem(stringIndex, string)));
+    }
+
+    textFile.close();
+
+    return ans;
+}
+
+void TRAHandler::setDestFilePath(const QString &value)
+{
+    destFilePath = value;
+}
+
+QString TRAHandler::getDestFilePath() const
+{
+    return destFilePath;
+}
+
+TRAHandler::TRAHandler(){}
+
+TRAHandler::TRAHandler(QString filepath) {
+    this->sourceFilePath = filepath;
+}
+
+void TRAHandler::init() {
+    StringList *list = extractStringItemsFromFile(this->sourceFilePath);
+
+    this->origStrings = *list;
+    foreach (StringItem si, this->origStrings) {
+        this->tranStrings.append(*(new StringItem(si.getIndex(), *(new QString()))));
     }
 }

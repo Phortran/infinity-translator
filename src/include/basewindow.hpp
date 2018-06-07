@@ -19,8 +19,6 @@ public:
     ~BaseWindow();
 
 private slots:
-    void on_actionOpen_triggered();
-
     void on_actionQuit_triggered();
 
     void on_actionAuthor_triggered();
@@ -37,14 +35,15 @@ private slots:
 
     void on_actionAbout_Qt_triggered();
 
+    void on_action_open_source_file_triggered();
+
+    void on_action_open_destination_file_triggered();
+
 private:
     Ui::BaseWindow *ui;
-    //QGridLayout *stringLayout;
-    //QQueue<StringItem *> stringItems;
     TRAHandler *tra;
     bool isDirty;
     QString savedFilename;
-    QFile *savedFile;
 
     void saveFile();
 };
