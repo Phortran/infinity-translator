@@ -1,7 +1,4 @@
 #include "basewindow.hpp"
-#include "ui_basewindow.h"
-#include "stringitem.hpp"
-#include "utils.hpp"
 
 BaseWindow::BaseWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -9,27 +6,30 @@ BaseWindow::BaseWindow(QWidget *parent) :
 
     ui->setupUi(this);
     ui->statusBar->showMessage("Welcome to Infinity translator!");
-    this->tra = NULL;
-    this->isDirty = false;
-    this->savedFilename = "NA";
+    tra = NULL;
+    isDirty = false;
+    savedDestFilename = "NA";
+    loadedSourceFilename = "NA";
 
-    this->ui->transText->setEnabled(false);
+    ui->transText->setEnabled(false);
+
+    loadRecent();
 }
 
 BaseWindow::~BaseWindow() {
-    if (this->tra != NULL)
-        delete this->tra;
+    if (tra != NULL)
+        delete tra;
     delete ui;
 }
 
 void BaseWindow::on_actionQuit_triggered() {
     delete ui;
 
-    if (this->isDirty) {
+    if (isDirty) {
         if (QMessageBox::question(this, tr("Save the work?"),
                                   tr("Some strings were modified;"
                                      "do you want to save the file?")) == QMessageBox::Yes) {
-            this->on_action_Save_triggered();
+            on_action_Save_triggered();
         }
     }
 
@@ -38,22 +38,23 @@ void BaseWindow::on_actionQuit_triggered() {
 
 void BaseWindow::on_actionAuthor_triggered() {
     QMessageBox::about(this, tr("About the author"),
-                             tr("About the author."));
+                             tr("Released under the MIT Licence v3.\n"
+                                "Copyright 2018, <b>Gabriele Santi</b>."));
 }
 
 void BaseWindow::on_listWidget_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous) {
     int index;
 
-    if (this->ui->transText->document()->isModified()) {
+    if (ui->transText->document()->isModified()) {
         QString toBeSaved = ui->transText->toPlainText();
         index = ui->listWidget->row(previous);
         if (index >= 0)
-            this->tra->setStringAt(index, toBeSaved);
+            tra->setStringAt(index, toBeSaved);
     }
 
     index = ui->listWidget->row(current);
-    QString origString = this->tra->getStringItemAt(index, TRAHandler::ORIG).getText();
-    QString tranString = this->tra->getStringItemAt(index, TRAHandler::TRAN).getText();
+    QString origString = tra->getStringItemAt(index, TRAHandler::ORIG).getText();
+    QString tranString = tra->getStringItemAt(index, TRAHandler::TRAN).getText();
 
     ui->origText->setText(origString);
     ui->transText->setText(tranString);
@@ -61,23 +62,24 @@ void BaseWindow::on_listWidget_currentItemChanged(QListWidgetItem *current, QLis
 
 void BaseWindow::on_transText_textChanged()
 {
-    if (!this->isDirty && this->ui->transText->document()->isModified())
-        this->isDirty = true;
+    if (!isDirty && ui->transText->document()->isModified())
+        isDirty = true;
 }
 
 void BaseWindow::saveFile() {
-    QFile savedFile(this->savedFilename);
+    QFile savedFile(savedDestFilename);
 
     ui->statusBar->showMessage("Saving file...");
 
-    if (this->ui->transText->document()->isModified()) {
+    // retrieve currently visible string, if modified
+    if (ui->transText->document()->isModified()) {
         QString toBeSaved = ui->transText->toPlainText();
         int index = ui->listWidget->currentRow();
         if (index >= 0)
-            this->tra->setStringAt(index, toBeSaved);
+            tra->setStringAt(index, toBeSaved);
     }
 
-    if (this->savedFilename == "NA") {
+    if (savedDestFilename == "NA") {
         // should NEVER happen
         fprintf(stderr, "WARNING: saveFile called without a valid file name\n");
         ui->statusBar->showMessage("File not saved!", 5000);
@@ -86,7 +88,7 @@ void BaseWindow::saveFile() {
 
     if (!savedFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QMessageBox::warning(this, tr("Error during opening of file"),
-                             tr("Unable to open file\"") + this->savedFilename + tr("\"for saving:")
+                             tr("Unable to open file\"") + savedDestFilename + tr("\"for saving:")
                              + "\n" + savedFile.errorString());
         ui->statusBar->showMessage("File not saved!", 5000);
         return;
@@ -94,7 +96,7 @@ void BaseWindow::saveFile() {
 
     if (savedFile.isWritable()) {
         QTextStream stream(&savedFile);
-        StringList tranStrings = this->tra->getTranStrings();
+        StringList tranStrings = tra->getTranStrings();
         StringList::const_iterator iter;
 
         for (iter = tranStrings.begin(); iter != tranStrings.end(); ++iter) {
@@ -105,33 +107,131 @@ void BaseWindow::saveFile() {
     }
     else {
         QMessageBox::warning(this, tr("Error during opening of file"),
-                             tr("Unable to open file\"") + this->savedFilename + tr("\"for saving:")
+                             tr("Unable to write on file\"") + savedDestFilename + tr("\":")
                              + "\n" + savedFile.errorString());
         ui->statusBar->showMessage("File not saved!", 5000);
         savedFile.close();
         return;
     }
 
-    this->isDirty = false;
+    isDirty = false;
     savedFile.close();
     ui->statusBar->showMessage("File correctly saved!", 5000);
 }
 
+/**
+ * @brief BaseWindow::loadRecent
+ *
+ * Load recent files
+ * TODO: technically this operation should be done in QML
+ *       in Design mode.
+ */
+void BaseWindow::loadRecent() {
+    int halfMaxRecent = (Preferences::MaxRecentFiles / 2);
+
+    for (int i = 0; i < Preferences::MaxRecentFiles; ++i) {
+        // load source files actions
+        if (i < halfMaxRecent) {
+            recentSourceFileActs[i] = new QAction(this);
+            recentSourceFileActs[i]->setVisible(false);
+
+            connect(recentSourceFileActs[i], SIGNAL(triggered()),
+                    this, SLOT(openRecentSourceFile()));
+        } // load dest files actions
+        else {
+            recentDestFileActs[i-halfMaxRecent] = new QAction(this);
+            recentDestFileActs[i-halfMaxRecent]->setVisible(false);
+
+            connect(recentDestFileActs[i-halfMaxRecent], SIGNAL(triggered()),
+                    this, SLOT(openRecentDestFile()));
+        }
+    }
+
+    // upper half of recent entries are for source files
+    upperSeparatorAct = ui->menu_Open->addSeparator();
+    for (int i = 0; i < halfMaxRecent; ++i)
+        ui->menu_Open->addAction(recentSourceFileActs[i]);
+
+    // lower half of recent entries are for destination files
+    midSeparatorAct = ui->menu_Open->addSeparator();
+    for (int i = 0; i < halfMaxRecent; ++i)
+        ui->menu_Open->addAction(recentDestFileActs[i]);
+
+    // add "clear recents"
+    bottomSeparatorAct = ui->menu_Open->addSeparator();
+    bottomSeparatorAct->setVisible(true);
+    clearAct = new QAction(this);
+    clearAct->setVisible(true);
+    connect(clearAct, SIGNAL(triggered()), this, SLOT(clearRecentFiles()));
+    clearAct->setText(tr("&Clear recents"));
+    ui->menu_Open->addAction(clearAct);
+
+    updateRecentFileActions();
+}
+
+void BaseWindow::updateRecentFileActions() {
+    QStringList sourceFiles = Preferences::getInstance()->retrieveRecentSourceFile();
+    QStringList destFiles = Preferences::getInstance()->retrieveRecentDestFile();
+
+    int numRecentSourceFiles = qMin(sourceFiles.size(), (Preferences::MaxRecentFiles / 2));
+    int numRecentDestFiles = qMin(destFiles.size(), (Preferences::MaxRecentFiles / 2));
+    int totalNumRecentFiles = numRecentSourceFiles + numRecentDestFiles;
+
+    // set recent source files
+    for (int i = 0; i < numRecentSourceFiles; ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(sourceFiles[i]).fileName());
+        recentSourceFileActs[i]->setText(text);
+        recentSourceFileActs[i]->setData(sourceFiles[i]);
+        recentSourceFileActs[i]->setVisible(true);
+    }
+    // set the rest of recent entries invisible, if applicable)
+    for (int j = numRecentSourceFiles; j < (Preferences::MaxRecentFiles / 2); ++j)
+        recentSourceFileActs[j]->setVisible(false);
+
+    // set recent destination files
+    for (int i = numRecentSourceFiles, j = 0; i < totalNumRecentFiles; ++i, ++j) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(destFiles[j]).fileName());
+        recentDestFileActs[j]->setText(text);
+        recentDestFileActs[j]->setData(destFiles[j]);
+        recentDestFileActs[j]->setVisible(true);
+    }
+    // set the rest of recent entries invisible, if applicable)
+    for (int j = numRecentDestFiles; j < (Preferences::MaxRecentFiles / 2); ++j)
+        recentDestFileActs[j]->setVisible(false);
+
+    upperSeparatorAct->setVisible(totalNumRecentFiles > 0);
+    midSeparatorAct->setVisible(numRecentSourceFiles != 0 && numRecentDestFiles != 0);
+    clearAct->setEnabled(totalNumRecentFiles > 0);
+}
+
 void BaseWindow::on_actionSaveAs_triggered()
 {
-    this->savedFilename = QFileDialog::getSaveFileName(this,
+    savedDestFilename = QFileDialog::getSaveFileName(this,
                                                    tr("Save TRA file"), "",
                                                    tr("Infinity TRA file (*.tra);;All Files (*)"));
 
-    this->saveFile();
+    setCurrentDestFile();
+    saveFile();
+}
+
+void BaseWindow::openRecentSourceFile() {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action)
+        loadSourceFile(action->data().toString());
+}
+
+void BaseWindow::openRecentDestFile() {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action)
+        loadDestFile(action->data().toString());
 }
 
 void BaseWindow::on_action_Save_triggered()
 {
-    if (this->savedFilename == "NA")
-        this->on_actionSaveAs_triggered();
+    if (savedDestFilename == "NA")
+        on_actionSaveAs_triggered();
     else {
-        this->saveFile();
+        saveFile();
     }
 }
 
@@ -140,84 +240,138 @@ void BaseWindow::on_actionAbout_Qt_triggered()
     QMessageBox::aboutQt(this, tr("About Qt"));
 }
 
+void BaseWindow::clearRecentFiles() {
+    Preferences *prefs = Preferences::getInstance();
+    prefs->clearRecents();
+
+    updateRecentFileActions();
+}
+
 void BaseWindow::on_action_open_source_file_triggered()
 {
-    StringList strings;
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Open Infinity language file"),
                                                     "./",
                                                     tr("Text files (*.tra);;All Files (*)"));
 
-    if (fileName != NULL) {
+    loadSourceFile(fileName);
+}
+
+void BaseWindow::loadSourceFile(QString filename) {
+    if (filename != NULL) {
         ui->statusBar->showMessage("Loading file...");
-        if (this->tra != NULL) {
-            if (this->isDirty) {
+        if (tra != NULL) {
+            if (isDirty) {
                 if (QMessageBox::question(this, tr("Save the work?"),
                                           tr("Some strings were modified;"
                                              "do you want to save the file?")) == QMessageBox::Yes) {
-                    this->on_action_Save_triggered();
+                    on_action_Save_triggered();
                 }
             }
-            delete this->tra;
+            delete tra;
         }
-        this->tra = new TRAHandler(fileName);
+        tra = new TRAHandler(filename);
 
         try {
-            this->tra->init();
+            tra->init();
         }
         catch (const std::exception &e) {
             ui->statusBar->showMessage(e.what());
-            this->ui->transText->setEnabled(false);
-            this->ui->action_open_destination_file->setEnabled(false);
+            ui->transText->setEnabled(false);
+            ui->action_open_destination_file->setEnabled(false);
             return;
         }
 
-        this->ui->transText->setEnabled(true);
-        this->ui->action_open_destination_file->setEnabled(true);
+        ui->transText->setEnabled(true);
+        ui->action_open_destination_file->setEnabled(true);
 
-        strings = this->tra->getOrigStrings();
+        StringList strings = tra->getOrigStrings();
 
         foreach (const StringItem &item, strings) {
             new QListWidgetItem(item.getTextIndex(), ui->listWidget);
         }
 
+        loadedSourceFilename = filename;
+        setCurrentSourceFile();
         ui->statusBar->showMessage("Source file correctly loaded!", 5000);
     }
 }
 
 void BaseWindow::on_action_open_destination_file_triggered()
 {
-    StringList strings;
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     tr("Open Infinity language file"),
                                                     "./",
                                                     tr("Text files (*.tra);;All Files (*)"));
 
-    if (fileName != NULL) {
+    loadDestFile(fileName);
+}
+
+void BaseWindow::loadDestFile(QString filename) {
+    if (tra == NULL) {
+        QMessageBox::warning(this, tr("Error during opening of file"),
+                             tr("It seems you are trying to open a destination file "
+                                      "without having first opened a source file; open the"
+                                      " latter, first.\n"));
+        return;
+    }
+
+    if (filename != NULL) {
         ui->statusBar->showMessage("Loading file...");
-        if (this->tra != NULL) {
-            if (this->isDirty) {
+            if (isDirty) {
                 if (QMessageBox::question(this, tr("Save the work?"),
                                           tr("Some strings were modified;"
                                              "do you want to save the work in "
                                              "the previously opened file?")) == QMessageBox::Yes) {
-                    this->on_action_Save_triggered();
+                    on_action_Save_triggered();
                 }
             }
-        }
-        QString oldDestFilePath = this->tra->getDestFilePath();
-        this->tra->setDestFilePath(fileName);
+        QString oldDestFilePath = tra->getDestFilePath();
+        tra->setDestFilePath(filename);
 
         try {
-            this->tra->setTranStrings();
+            tra->setTranStrings();
         }
         catch (const std::exception &e) {
             ui->statusBar->showMessage(e.what());
-            this->tra->setDestFilePath(oldDestFilePath);
+            tra->setDestFilePath(oldDestFilePath);
             return;
         }
 
-        this->savedFilename = fileName;
+        savedDestFilename = filename;
+        setCurrentDestFile();
         ui->statusBar->showMessage("Translated file correctly loaded!", 5000);
     }
+}
+
+void BaseWindow::setCurrentDestFile() {
+    if (savedDestFilename == "NA") {
+        // this should NEVER happen
+        fprintf(stderr, "WARNING: setCurrentDestFile called without a valid file name\n");
+        return;
+    }
+
+    Preferences *prefs = Preferences::getInstance();
+    QStringList files = prefs->retrieveRecentDestFile();
+    files.removeAll(savedDestFilename);
+    files.prepend(savedDestFilename);
+    prefs->saveRecentDestFile(files);
+
+    updateRecentFileActions();
+}
+
+void BaseWindow::setCurrentSourceFile() {
+    if (loadedSourceFilename == "NA") {
+        // this should NEVER happen
+        fprintf(stderr, "WARNING: setCurrentSourceFile called without a valid file name\n");
+        return;
+    }
+
+    Preferences *prefs = Preferences::getInstance();
+    QStringList files = prefs->retrieveRecentSourceFile();
+    files.removeAll(loadedSourceFilename);
+    files.prepend(loadedSourceFilename);
+    prefs->saveRecentSourceFile(files);
+
+    updateRecentFileActions();
 }

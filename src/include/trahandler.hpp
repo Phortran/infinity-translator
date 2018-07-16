@@ -6,7 +6,6 @@
 #include <QFile>
 #include <QTextStream>
 #include "stringitem.hpp"
-#include "utils.hpp"
 
 class TRAHandler
 {

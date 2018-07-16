@@ -1,8 +1,6 @@
 #ifndef STRINGITEM_H
 #define STRINGITEM_H
 
-//#include <QWidget>
-//#include <QtWidgets>
 #include<QString>
 
 class StringItem {
@@ -27,5 +25,7 @@ private:
 
     StringItem();
 };
+
+typedef QList<StringItem> StringList;
 
 #endif // STRINGITEM_H
